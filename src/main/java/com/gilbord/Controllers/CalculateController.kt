@@ -4,6 +4,7 @@ import com.gilbord.Models.Chanel
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.lang.Math.pow
 import kotlin.math.ln
 
 @RestController
@@ -30,41 +31,49 @@ class CalculateController {
         const val b = 0.03f     //Температурный коэффициент вязкости материала
         const val tr = 120      //Температура приведения
         const val n = 0.35f     //Индекс течения материала
-        const val au = 250      //Коэффициент теплоотдачи от крышки канала к материалу
+        const val alphaU = 250f //Коэффициент теплоотдачи от крышки канала к материалу
+        const val tz = 0f       //Темература приведения
+        const val mu0 = 0f
+        const val k = 0         //Степень k = n + 1
 
         fun performanceFunction(chanel: Chanel): Float {
             return 0.125f * Math.pow((chanel.height / chanel.width).toDouble(),
                     2.0).toFloat() - 0.625f * (chanel.height / chanel.width) + 1
         }
 
-        //FIXME: Tr or Tg??
-        val t: (Float, Float) -> Float =
-                { tu, vu -> tr + 1 / b * ln(kappa(tu, vu)) }
+        val fch: (Float, Float) -> Float = { w, h -> 0.125f * Math.pow((h / w).toDouble(),
+                2.0).toFloat() - 0.625f * (h / w) + 1 }
 
-        val kappa: (Float, Float) -> Float =
-                { tu, vu -> kappa1(vu, 1.0f, tu) * kappa2(tu, 1.0f) + kappa3(tu, 1.0f) }
+        val q: (Float, Float, Float) -> Float = { w, h, vu -> (w * h * vu) / 2 * fch(w, h) }
+
+        //FIXME: Tr or Tg??
+        val t: (Float, Float, Float, Float, Float, Float) -> Float =
+                { w, h, l, vu, tu, z -> tr + 1 / b * ln(kappa(tu, vu, z, w, h)) }
+
+        val kappa: (Float, Float, Float, Float, Float) -> Float =
+                { tu, vu, z, w, h -> kappa1(vu, tu, w, h) * kappa2(tu, vu, z, w, h) + kappa3(tu, z, w, h, vu) }
 
         //FIXME: WV(???????????)
-        val kappa1: (Float, Float, Float) -> Float =
-                { vu, alphaU, tu -> (b * qGamma(vu, 1.0f) + 1/*wv*/) / (b * qAlpha(tu, alphaU)) }
+        val kappa1: (Float, Float, Float, Float) -> Float =
+                { vu, tu, w, h -> (b * qGamma(vu, h) + w * alphaU) / (b * qAlpha(tu)) }
 
         //FIXME: q(?????????)
-        val kappa2: (Float, Float) -> Float =
-                { tu, alphaU -> 1 - Math.exp((-2 * b * qAlpha(tu, alphaU) / ro * c * 1/*q*/).toDouble()).toFloat() }
+        val kappa2: (Float, Float, Float, Float, Float) -> Float =
+                { tu, vu, z, w, h -> 1 - Math.exp((-z * b * qAlpha(tu) / ro * c * q(w, h, vu)).toDouble()).toFloat() }
 
         //FIXME: tz, z, q
-        val kappa3: (Float, Float) -> Float =
-                { tu, alphaU ->
-                    Math.exp((b * (t0 - 1/*tz*/ - ((1/*z*/ * qAlpha(tu, alphaU)) / (ro * c * 1/*q*/)))).toDouble()).toFloat()
+        val kappa3: (Float, Float, Float, Float, Float) -> Float =
+                { tu, z, w, h, vu ->
+                    Math.exp(b * (t0 - tz - ((z * qAlpha(tu) / (ro * c * q(w, h, vu))))).toDouble()).toFloat()
                 }
 
         //FIXME: change mu0(????????)
         val qGamma: (Float, Float) -> Float =
-                { vu, mu0 -> w * h * mu0 * pow(gamma(vu, h), n+1) }
+                { vu, h -> w * h * mu0 * Math.pow(gamma(vu, h).toDouble(), k.toDouble()).toFloat() }
 
         //FIXME: alphaU(?????????????), Tr or Tg(?????????????)
-        val qAlpha: (Float, Float) -> Float =
-                { tu, alphaU -> w * alphaU * (1 / b * tu + tr) }
+        val qAlpha: (Float) -> Float =
+                { tu -> w * alphaU * (1 / b * tu + tr) }
 
         val gamma: (Float, Float) -> Float = { vu, h -> vu / h }
 
