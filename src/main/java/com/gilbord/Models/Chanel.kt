@@ -70,20 +70,19 @@ data class Chanel(val width: Float,
     private val gamma: (Float, Float) -> Float = { vu, h -> vu / h }
 
     public fun performanceFunction(): Float {
-        return 0.125f * Math.pow((this.height / this.width).toDouble(),
-                2.0).toFloat() - 0.625f * (this.height / this.width) + 1
+        return q(this.width, this.height, this.coverSpeed)
     }
 
-    public fun calculateTemperature(): ArrayList<Float> {
-        val result = ArrayList<Float>()
-        var currentValue = 0
+    public fun calculateTemperature(): ArrayList<Point> {
+        val result = ArrayList<Point>()
+        var currentValue = 0f
         while (currentValue < this.length) {
-            result.add(t(this.width,
+            result.add(Point(currentValue, t(this.width,
                     this.height,
                     this.length,
                     this.coverSpeed,
                     this.coverTemperature.toFloat(),
-                    currentValue.toFloat()))
+                    currentValue)))
             currentValue += this.step
         }
         return result
