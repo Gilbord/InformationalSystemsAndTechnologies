@@ -15,17 +15,28 @@ class CalculateController {
     @CrossOrigin
     @RequestMapping(value = ["/performance"],
             method = [RequestMethod.POST])
-    public fun calculatePerformance(@RequestBody chanel: Chanel): ResponseEntity<Float> {
+    public fun calculatePerformance(@RequestBody chanel: Chanel): ResponseEntity<Any> {
         log.info(chanel.toString())
-        return ResponseEntity(chanel.performanceFunction(), HttpStatus.OK)
+        return if (chanel.validate()) ResponseEntity(chanel.performanceFunction(), HttpStatus.OK)
+        else ResponseEntity(Error("Data doesn't valid"), HttpStatus.BAD_REQUEST)
     }
 
     @CrossOrigin
     @RequestMapping(value = ["/temperature"],
             method= [RequestMethod.POST])
-    public fun calculateTemperature(@RequestBody chanel: Chanel): ResponseEntity<ArrayList<Point>>{
+    public fun calculateTemperature(@RequestBody chanel: Chanel): ResponseEntity<Any>{
         log.info(chanel.toString())
-        return ResponseEntity(chanel.calculateTemperature(), HttpStatus.OK)
+        return if (chanel.validate()) ResponseEntity(chanel.calculateTemperature(), HttpStatus.OK)
+        else ResponseEntity("Data doesn't valid", HttpStatus.BAD_REQUEST)
+    }
+
+    @CrossOrigin
+    @RequestMapping(value = ["/viscosity"],
+            method= [RequestMethod.POST])
+    public fun calculateViscosity(@RequestBody chanel: Chanel): ResponseEntity<Any>{
+        log.info(chanel.toString())
+        return if (chanel.validate()) ResponseEntity(chanel.calculateViscosity(), HttpStatus.OK)
+        else ResponseEntity("Data doesn't valid", HttpStatus.BAD_REQUEST)
     }
 
 }
