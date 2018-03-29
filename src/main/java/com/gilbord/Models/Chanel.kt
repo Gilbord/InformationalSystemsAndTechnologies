@@ -52,7 +52,7 @@ data class Chanel(val width: Float,
             { tu, vu, z, w, h -> kappa1(vu, tu, w, h) * kappa2(tu, vu, z, w, h) + kappa3(tu, z, w, h, vu) }
 
     private val kappa1: (Float, Float, Float, Float) -> Float =
-            { vu, tu, w, h -> (b * qGamma(vu, h, w) + w * alphaU) / (b * qAlpha(tu, w)) }
+            { vu, tu, w, h -> (b * qGamma(vu, h, w) * w * alphaU) / (b * qAlpha(tu, w)) }
 
     private val kappa2: (Float, Float, Float, Float, Float) -> Float =
             { tu, vu, z, w, h -> 1 - Math.exp((-z * b * qAlpha(tu, w) / (ro * c * q(w, h, vu))).toDouble()).toFloat() }

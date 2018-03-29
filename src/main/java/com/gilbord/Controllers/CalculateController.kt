@@ -1,7 +1,6 @@
 package com.gilbord.Controllers
 
 import com.gilbord.Models.Chanel
-import com.gilbord.Models.Point
 import org.apache.log4j.Logger
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
