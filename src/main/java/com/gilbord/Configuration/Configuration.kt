@@ -1,4 +1,3 @@
-/*
 package com.com.gilbord.Configuration
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -74,4 +73,4 @@ open class Configuration {
         properties.setProperty("hibernate.dialect", environment!!.getProperty("hibernate.dialect"))
         return properties
     }
-}*/
+}
