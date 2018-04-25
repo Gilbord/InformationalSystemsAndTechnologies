@@ -42,13 +42,18 @@ repositories {
 
 dependencies {
     compile(kotlinModule("stdlib-jdk8", kotlinVersion))
-    compile("postgresql:postgresql:9.1-901-1.jdbc4")
+    compile("org.postgresql:postgresql:42.2.2")
     compile("org.springframework.boot:spring-boot-starter-data-jpa")
     compile("org.springframework.boot:spring-boot-starter-web")
     compile("org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion")
     compile("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
     compile("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.0")
     compile("com.h2database:h2")
+    compile("com.itextpdf:itextpdf:5.0.6")
+    // https://mvnrepository.com/artifact/org.knowm.xchart/xchart
+    compile("org.knowm.xchart:xchart:3.5.1")
+
+
 }
 
 tasks.withType<KotlinCompile> {
