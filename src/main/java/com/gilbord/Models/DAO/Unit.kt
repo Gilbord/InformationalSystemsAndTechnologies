@@ -9,5 +9,4 @@ data class Unit(@Id
                 @GeneratedValue(generator = "increment")
                 @GenericGenerator(name = "increment", strategy = "increment")
                 val id: Long = 0,
-                @Column(name = "name") var name: String,
-                @OneToMany(mappedBy = "unit") var properties: List<Property>? = null)
+                @Column(name = "name") var name: String)

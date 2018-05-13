@@ -3,6 +3,7 @@ package com.gilbord.Controllers
 import com.gilbord.Models.Model
 import com.gilbord.Models.PDF
 import com.gilbord.Services.CalculateService
+import com.gilbord.Services.ValueService
 import org.apache.log4j.Logger
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -16,24 +17,21 @@ import org.springframework.http.MediaType
 class CalculateController {
 
     val log = Logger.getLogger(CalculateController::class.java.name)
+
     @Autowired
     lateinit var calculateService: CalculateService
 
-    @CrossOrigin
-    @RequestMapping(value = ["/performance"],
-            method = [RequestMethod.POST])
-    public fun calculatePerformance(@RequestBody model: Model): ResponseEntity<Any> {
-        return if (calculateService.validate(model)) ResponseEntity(calculateService.performanceFunction(model), HttpStatus.OK)
-        else ResponseEntity(Error("Data doesn't valid"), HttpStatus.BAD_REQUEST)
-    }
+    @Autowired
+    lateinit var valueService: ValueService
 
     @CrossOrigin
     @RequestMapping(value = ["/pdf"],
             method = [RequestMethod.POST])
-    public fun getPDF(): ResponseEntity<Any>{
+    public fun getPDF(@RequestBody model: Model): ResponseEntity<Any>{
         log.info("pdf")
         CalculateService.calculatedModel?.let{
-            val pdf = PDF(it)
+            val values = this.valueService.getValuesByMaterialId(model.materialId)
+            val pdf = PDF(it, values)
             val headers = HttpHeaders()
             headers.contentType = MediaType.parseMediaType("application/pdf")
             val filename = "output.pdf"
@@ -48,6 +46,7 @@ class CalculateController {
     @RequestMapping(value = ["/calculate"],
             method = [RequestMethod.POST])
     public fun calculateModel(@RequestBody model: Model): ResponseEntity<Any>{
+        log.info(model)
         return if (calculateService.validate(model)) ResponseEntity(calculateService.calculate(model), HttpStatus.OK)
         else ResponseEntity("Data doesn't valid", HttpStatus.BAD_REQUEST)
     }

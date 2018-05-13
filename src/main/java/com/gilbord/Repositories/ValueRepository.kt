@@ -7,4 +7,5 @@ import org.springframework.data.repository.CrudRepository
 
 interface ValueRepository: CrudRepository<Value, Long> {
     fun getByMaterialAndProperty(material: Material, property: Property): List<Value>
+    fun getByMaterial(material: Material): List<Value>
 }

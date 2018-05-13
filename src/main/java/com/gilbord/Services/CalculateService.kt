@@ -1,12 +1,15 @@
 package com.gilbord.Services
 
-import com.gilbord.Models.*
+import com.gilbord.Models.CalculatedModel
+import com.gilbord.Models.Model
+import com.gilbord.Models.Point
 import com.gilbord.Repositories.MaterialRepository
 import com.gilbord.Repositories.PropertyRepository
 import com.gilbord.Repositories.ValueRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.util.ArrayList
+import kotlin.collections.HashMap
 import kotlin.math.exp
 import kotlin.math.ln
 
@@ -24,6 +27,8 @@ class CalculateService {
 
     private val neededAccuracy: (Float) -> Int = { step -> step.toString().split(".")[1].length }
 
+    private val cachedValues = HashMap<Long, Map<String, Float>>()
+
     private fun Float.round(places: Int): Double {
         val scale = Math.pow(10.0, places.toDouble())
         return Math.round(this * scale) / scale
@@ -33,27 +38,52 @@ class CalculateService {
         var calculatedModel: CalculatedModel? = null
     }
 
-     private val ro: (Long) -> Float = {materialId -> getValue(materialId,
-             "Плотность")}
-     private val c : (Long) -> Float = {materialId -> getValue(materialId,
-             "Удельная теплоемкость")}
-     private val t0: (Long) -> Float = {materialId -> getValue(materialId,
-             "Температура плавления")}
-     private val mu0: (Long) -> Float = {materialId -> getValue(materialId,
-             "Коэффициент консистенции материала при температуре приведения")}
-     private val b : (Long) -> Float = {materialId -> getValue(materialId,
-             "Температурный коэффициент вязкости материала")}
-     private val tr: (Long) -> Float = {materialId -> getValue(materialId,
-             "Температура приведения")}
-     private val n : (Long) -> Float = {materialId -> getValue(materialId,
-             "Индекс течения материала")}
-     private val alphaU: (Long) -> Float = {materialId -> getValue(materialId,
-             "Коэффициент теплоотдачи от крышки канала к материалу")}
+    private val ro: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Плотность")
+    }
+    private val c: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Удельная теплоемкость")
+    }
+    private val t0: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Температура плавления")
+    }
+    private val mu0: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Коэффициент консистенции материала при температуре приведения")
+    }
+    private val b: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Температурный коэффициент вязкости материала")
+    }
+    private val tr: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Температура приведения")
+    }
+    private val n: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Индекс течения материала")
+    }
+    private val alphaU: (Long) -> Float = { materialId ->
+        getValue(materialId,
+                "Коэффициент теплоотдачи от крышки канала к материалу")
+    }
 
-    private val getValue: (Long, String) -> Float = { materialId, propertyName ->
+    private val getValueFromDataBase: (Long, String) -> Float = { materialId, propertyName ->
         val property = propertyRepository.getPropertyByName(propertyName)!!
         val material = materialRepository.findOne(materialId)
-        valueRepository.getByMaterialAndProperty(material, property)[0].value
+        val value = valueRepository.getByMaterialAndProperty(material, property)[0].value
+        val map = HashMap<String, Float>()
+        map[propertyName] = value
+        this.cachedValues[materialId] = map
+        value
+    }
+
+    private val getValue: (Long, String) -> Float = { materialId, propertyName ->
+         getValueFromDataBase(materialId, propertyName)
+
     }
 
     private val fch: (Float, Float) -> Float = { w, h ->
@@ -73,7 +103,7 @@ class CalculateService {
             { tu, vu, z, w, h, materialId -> kappa1(vu, tu, w, h, materialId) * kappa2(tu, vu, z, w, h, materialId) + kappa3(tu, z, w, h, vu, materialId) }
 
     private val kappa1: (Float, Float, Float, Float, Long) -> Float =
-            { vu, tu, w, h, materialId -> (b(materialId) * qGamma(vu, h, w, materialId) * w * alphaU(materialId)) / (b(materialId) * qAlpha(tu, w, materialId)) }
+            { vu, tu, w, h, materialId -> (b(materialId) * qGamma(vu, h, w, materialId) + w * alphaU(materialId)) / (b(materialId) * qAlpha(tu, w, materialId)) }
 
     private val kappa2: (Float, Float, Float, Float, Float, Long) -> Float =
             { tu, vu, z, w, h, materialId -> 1 - Math.exp((-z * b(materialId) * qAlpha(tu, w, materialId) / (ro(materialId) * c(materialId) * q(w, h, vu))).toDouble()).toFloat() }
@@ -103,11 +133,11 @@ class CalculateService {
         return performance(model.channel.width, model.channel.height, model.channel.coverSpeed, model.materialId)
     }
 
-    public fun calculateTemperature(model: Model): ArrayList<TemperaturePoint> {
-        val result = ArrayList<TemperaturePoint>()
+    public fun calculateTemperature(model: Model): ArrayList<Point> {
+        val result = ArrayList<Point>()
         var currentValue = 0f
         while (currentValue <= model.channel.length) {
-            result.add(TemperaturePoint(currentValue.round(neededAccuracy(model.step)),
+            result.add(Point(currentValue.round(neededAccuracy(model.step)),
                     t(model.channel.width,
                             model.channel.height,
                             model.channel.length,
@@ -119,11 +149,11 @@ class CalculateService {
         return result
     }
 
-    public fun calculateViscosity(model: Model): ArrayList<ViscosityPoint> {
-        val result = ArrayList<ViscosityPoint>()
+    public fun calculateViscosity(model: Model): ArrayList<Point> {
+        val result = ArrayList<Point>()
         var currentValue = 0f
         while (currentValue <= model.channel.length) {
-            result.add(ViscosityPoint(currentValue.round(neededAccuracy(model.step)), nu(model.channel.width,
+            result.add(Point(currentValue.round(neededAccuracy(model.step)), nu(model.channel.width,
                     model.channel.height,
                     model.channel.length,
                     model.channel.coverSpeed,

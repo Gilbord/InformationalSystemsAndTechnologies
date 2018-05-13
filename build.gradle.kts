@@ -52,6 +52,7 @@ dependencies {
     compile("com.itextpdf:itextpdf:5.0.6")
     // https://mvnrepository.com/artifact/org.knowm.xchart/xchart
     compile("org.knowm.xchart:xchart:3.5.1")
+    compile("org.springframework.boot:spring-boot-starter-security")
 
 
 }
