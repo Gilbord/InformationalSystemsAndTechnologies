@@ -57,6 +57,9 @@ class UserController {
 
     @RequestMapping(value = ["/registration"], method = [RequestMethod.POST])
     fun register(@RequestBody user: User): ResponseEntity<Any> {
+        userRepository.findByUsername(user.username)?.let {
+            return ResponseEntity("This user already exist", HttpStatus.BAD_REQUEST)
+        }
         userRepository.save(user)
         return ResponseEntity(HttpStatus.OK)
     }
